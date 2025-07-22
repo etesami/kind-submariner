@@ -1,0 +1,26 @@
+# create namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sample
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netshoot
+  namespace: sample
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netshoot
+  template:
+    metadata:
+      labels:
+        app: netshoot
+        skycluster.io/cluster: cluster-test
+    spec:
+      containers:
+      - name: network-tools
+        image: nicolaka/netshoot
+        command: ["sleep", "infinity"]

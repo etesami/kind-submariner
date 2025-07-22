@@ -1,0 +1,23 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: false
+  podSubnet: 10.100.0.0/16
+  serviceSubnet: 100.10.0.0/16
+  kubeProxyMode: iptables
+kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    networking:
+      podSubnet: 10.100.0.0/16
+      serviceSubnet: 100.10.0.0/16
+      dnsDomain: broker.local
+    apiServer:
+      certSANs:
+        - "10.30.180.18"
+        - "127.0.0.1"
+        - "broker.local"
+        - "142.1.174.179" # Replace with your cluster public IP
+nodes:
+  - role: control-plane
+    

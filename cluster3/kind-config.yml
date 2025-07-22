@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: false
+  podSubnet: 10.203.0.0/16
+  serviceSubnet: 100.23.0.0/16
+  kubeProxyMode: iptables
+kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    metadata:
+      name: config
+    networking:
+      podSubnet: 10.203.0.0/16
+      serviceSubnet: 100.23.0.0/16
+      dnsDomain: cluster3.local
+nodes:
+  - role: control-plane
+  - role: worker
