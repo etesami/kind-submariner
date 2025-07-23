@@ -5,18 +5,16 @@ networking:
   podSubnet: 10.100.0.0/16
   serviceSubnet: 100.10.0.0/16
   kubeProxyMode: iptables
+  apiServerAddress: "0.0.0.0" 
+  apiServerPort: 6443 
 kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration
-    networking:
-      podSubnet: 10.100.0.0/16
-      serviceSubnet: 100.10.0.0/16
-      dnsDomain: broker.local
     apiServer:
       certSANs:
-        - "10.30.180.18"
         - "127.0.0.1"
         - "broker.local"
+        - "10.30.180.18"  # Replace with your cluster internal IP
         - "142.1.174.179" # Replace with your cluster public IP
 nodes:
   - role: control-plane
