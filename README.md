@@ -74,14 +74,38 @@ fi
 # Add the helm repo:
 helm --kube-context $CONTEXT repo add submariner-latest \
   https://submariner-io.github.io/submariner-charts/charts 
+
+kubectl label --context=$CONTEXT node broker-c1-control-plane submariner.io/gateway="true"
+
+helm install submariner-operator submariner-latest/submariner-operator \
+      --create-namespace \
+      --namespace "${SUBMARINER_NS}" \
+      --set ipsec.psk="${SUBMARINER_PSK}" \
+      --set broker.server="${SUBMARINER_BROKER_URL}" \
+      --set broker.token="${SUBMARINER_BROKER_TOKEN}" \
+      --set broker.namespace="${BROKER_NS}" \
+      --set broker.ca="${SUBMARINER_BROKER_CA}" \
+      --set submariner.serviceDiscovery=false \
+      --set submariner.cableDriver=wireguard \
+      --set submariner.clusterId="${CLUSTER_ID}" \
+      --set submariner.clusterCidr="${CLUSTER_CIDR}" \
+      --set submariner.serviceCidr="${SERVICE_CIDR}" \
+      --set submariner.natEnabled="true" \
+      --set debug=true \
+      --kube-context $CONTEXT
 ```
 
+Then for the other cluster(s):
+
+
+- Make sure you a cluster created by kind:
 
 ```bash
-kind create cluster --name cluster1 --config cluster1/kind-config.yml
+# Adjust the variables in the config file
+kind create cluster --name cluster2 --config cluster2/kind-config.yml
 ```
 
-Copy the env-source.env file to this cluster machine, then:
+Copy the env-source.env file from the `broker` to this cluster machine, then:
 
 ```bash
 
@@ -89,9 +113,8 @@ Copy the env-source.env file to this cluster machine, then:
 # instead of 0.0.0.0
 sed -i "s/0\.0\.0\.0/$(curl -s ifconfig.io)/g" ~/.kube/config
 
-c=cluster2
 # Ensure path are correct, then source env variables:
-source broker/var-source.env
+source broker/var-source.env # copied from the broker
 source ${c}/var-cluster.env
 
 # A safety check to ensure variables are set
@@ -106,7 +129,7 @@ helm --kube-context $CONTEXT repo add submariner-latest \
 
 
 # Make sure one node is labled as gateway:
-kubectl label --context=$CONTEXT node $c-control-plane submariner.io/gateway="true"
+kubectl label --context=$CONTEXT node cluster2-control-plane submariner.io/gateway="true"
 
 helm install submariner-operator submariner-latest/submariner-operator \
       --create-namespace \
