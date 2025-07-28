@@ -1,13 +1,15 @@
 #!/bin/bash
 
+export CONTEXT=kind-broker-c1
+
 export BROKER_NS=submariner-k8s-broker
 
-export SUBMARINER_BROKER_CA=$(kubectl -n "${BROKER_NS}" get secrets --context kind-b1 \
+export SUBMARINER_BROKER_CA=$(kubectl -n "${BROKER_NS}" get secrets --context $CONTEXT \
     -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='${BROKER_NS}-client')].data['ca\.crt']}")
-export SUBMARINER_BROKER_TOKEN=$(kubectl -n "${BROKER_NS}" get secrets --context kind-b1  \
+export SUBMARINER_BROKER_TOKEN=$(kubectl -n "${BROKER_NS}" get secrets --context $CONTEXT  \
     -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='${BROKER_NS}-client')].data.token}" \
        | base64 --decode)
-export SUBMARINER_BROKER_URL=$(kubectl -n default get endpoints kubernetes --context kind-b1 \
+export SUBMARINER_BROKER_URL=$(kubectl -n default get endpoints kubernetes --context $CONTEXT \
     -o jsonpath="{.subsets[0].addresses[0].ip}:{.subsets[0].ports[?(@.name=='https')].port}")
 
 export SUBMARINER_PSK=$(LC_CTYPE=C tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 64 | head -n 1)

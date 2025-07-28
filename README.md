@@ -1,18 +1,24 @@
 # kind-submariner
 
-## Create Cluster
+## Create Clusters
 
-Create the broker cluster:
+Create a broker cluster (which we use it as one of the client clusters as well, so the name is `broker-c1`):
 
 ```bash
-kind create cluster --name broker --config broker/kind-config.yml
+# Adjust the IPs in the config file
+kind create cluster --name broker-c1 --config broker/kind-config.yml
 ```
 
 - Make sure the client cluster is accessible through the internet and that the API server has a public IP address. Check out the broker kind config file in `broker/kind-config.yml`.
-- We assume each client cluster is deployed on a different machine. The API server of each machine 
-should be visible to others, as required by Submariner. NAT traversal for clusters behind a firewall is not considered. If you use kind, port mapping should be applied to map port `4500` of the host machine to the node running gateway. See `cluster1/kind-config.yml` for en exampel setup.
+- We assume each client cluster is deployed on a different machine using `kind`. The API server of each machine 
+should be visible to others, as required by Submariner. 
+NAT traversal for clusters behind a firewall is not considered. 
+If you use kind, port mapping should be applied to map port `4500` of the host machine 
+to the node running gateway. See `cluster2/kind-config.yml` for en exampel setup.
 
 Make sure port **6443 (TCP)** and **4500 (UDP)** are open for each cluster.
+
+Create another cluster in the other machine (`cluster2`) following the instructions above.
 
 ## Submariner Configuration
 
@@ -22,7 +28,7 @@ Make sure port **6443 (TCP)** and **4500 (UDP)** are open for each cluster.
 helm --kube-context kind-broker repo add submariner-latest \
   https://submariner-io.github.io/submariner-charts/charts 
 
-export CONTEX=kind-broker
+export CONTEXT=kind-broker-c1
 helm install --create-namespace \
              --namespace submariner-k8s-broker \
              --kube-context ${CONTEXT} \
@@ -34,6 +40,7 @@ Then run `broker/var-export.sh` to generate the env variables. The file
 env variables when setting up other client clusters.
 
 ```bash
+# Fist ensure the CONTEXT is set probably in the script below, then run it
 ./broker/var-export.sh
 # Then check ./broker/var-source.env file to validate the variables
 
@@ -49,9 +56,26 @@ env variables when setting up other client clusters.
 
 ### Client Clusters
 
-For each cluster, repeat the following instructions:
+For each cluster, repeat the following instructions. First we handle special case of `c1` which is 
+the same cluster as the broker. So:
 
-The following instructions is for `cluster1`, and should be repeated for all other clusters.
+```bash
+# Ensure path are correct, then source env variables:
+source broker/var-source.env
+# Adjust variables in below script and then run:
+source cluster1/var-cluster.env
+
+# A safety check to ensure variables are set
+if [[ -z "$SUBMARINER_BROKER_TOKEN" || -z "$CLUSTER_CIDR" ]]; then
+  echo "Variables are not set for $c".
+  break
+fi
+  
+# Add the helm repo:
+helm --kube-context $CONTEXT repo add submariner-latest \
+  https://submariner-io.github.io/submariner-charts/charts 
+```
+
 
 ```bash
 kind create cluster --name cluster1 --config cluster1/kind-config.yml
@@ -65,7 +89,7 @@ Copy the env-source.env file to this cluster machine, then:
 # instead of 0.0.0.0
 sed -i "s/0\.0\.0\.0/$(curl -s ifconfig.io)/g" ~/.kube/config
 
-c=cluster1
+c=cluster2
 # Ensure path are correct, then source env variables:
 source broker/var-source.env
 source ${c}/var-cluster.env
